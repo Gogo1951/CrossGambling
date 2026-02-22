@@ -39,6 +39,7 @@ core/player/PlayerFrame.lua
 core/GUI.lua
 core/ClassicGUI.lua
 core/Game.lua
+core/history/History.lua
 core/Stats.lua
 core/Events.lua
 

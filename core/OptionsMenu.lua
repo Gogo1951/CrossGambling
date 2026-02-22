@@ -1,11 +1,3 @@
--- ============================================================
---  CrossGambling – OptionsMenu.lua  (refactored)
---  Modular helpers, proper colour swatches, polished toggles.
--- ============================================================
-
--- ──────────────────────────────────────────────────────────
---  Module: Backdrop factory
--- ──────────────────────────────────────────────────────────
 local CG_TEX = "Interface\\AddOns\\CrossGambling\\media\\CG.tga"
 
 local function MakeBackdrop(edgeSize)
@@ -16,9 +8,6 @@ local function MakeBackdrop(edgeSize)
     }
 end
 
--- ──────────────────────────────────────────────────────────
---  Module: Basic primitives
--- ──────────────────────────────────────────────────────────
 local function MakeLabel(parent, text, fontObj)
     local fs = parent:CreateFontString(nil, "OVERLAY", fontObj or "GameFontNormalSmall")
     fs:SetText(text)
@@ -39,9 +28,6 @@ local function MakeSectionHeader(parent, text)
     return fs
 end
 
--- ──────────────────────────────────────────────────────────
---  Module: Row container
--- ──────────────────────────────────────────────────────────
 local ROW_H = 28
 
 local function MakeRow(parent, width, yOff, isClassic)
@@ -56,9 +42,6 @@ local function MakeRow(parent, width, yOff, isClassic)
     return row
 end
 
--- ──────────────────────────────────────────────────────────
---  Module: Action button
--- ──────────────────────────────────────────────────────────
 local function MakeButton(parent, w, h, text, isClassic)
     local btn
     if isClassic then
@@ -81,9 +64,6 @@ local function MakeButton(parent, w, h, text, isClassic)
     return btn
 end
 
--- ──────────────────────────────────────────────────────────
---  Module: Toggle button  (ON / OFF with tinted background)
--- ──────────────────────────────────────────────────────────
 local function MakeToggle(parent, w, h, isClassic)
     local btn = MakeButton(parent, w, h, "OFF", isClassic)
 
@@ -105,10 +85,6 @@ local function MakeToggle(parent, w, h, isClassic)
     return btn
 end
 
--- ──────────────────────────────────────────────────────────
---  Module: Colour swatch  (coloured square button)
---  Delegates to Colors.lua for picker + apply logic.
--- ──────────────────────────────────────────────────────────
 local function MakeColorSwatch(parent, colorKey, isClassic)
     local swatch = CreateFrame("Button", nil, parent, "BackdropTemplate")
     swatch:SetSize(26, 22)
@@ -131,7 +107,6 @@ local function MakeColorSwatch(parent, colorKey, isClassic)
     hlTex:SetBlendMode("ADD")
     hlTex:SetAllPoints()
 
-    -- Delegate entirely to Colors.lua – it saves, applies live, handles both APIs
     swatch:SetScript("OnClick", function()
         CrossGambling:ColorsOpenPicker(colorKey, RefreshColor)
     end)
@@ -141,9 +116,6 @@ local function MakeColorSwatch(parent, colorKey, isClassic)
     return swatch
 end
 
--- ──────────────────────────────────────────────────────────
---  Module: Colour row  (label left, swatch right)
--- ──────────────────────────────────────────────────────────
 local function MakeColorRow(parent, width, yOff, rowLabel, colorKey, isClassic)
     local row = MakeRow(parent, width, yOff, isClassic)
     row:SetHeight(30)
@@ -158,9 +130,6 @@ local function MakeColorRow(parent, width, yOff, rowLabel, colorKey, isClassic)
     return row, swatch
 end
 
--- ══════════════════════════════════════════════════════════
---  BuildOptionsMenu
--- ══════════════════════════════════════════════════════════
 function CrossGambling:BuildOptionsMenu()
     if CrossGambling.OptionsMenuFrame then return end
 
@@ -174,7 +143,6 @@ function CrossGambling:BuildOptionsMenu()
     local ROW_W       = PANEL_W - 18
     local PAD         = 8
 
-    -- ── Panel ──────────────────────────────────────────
     local panel
     if isClassic then
         panel = CreateFrame("Frame", "CGOptionsMenuFrame", UIParent, "BasicFrameTemplateWithInset")
@@ -220,7 +188,6 @@ function CrossGambling:BuildOptionsMenu()
     panel:SetScript("OnDragStop",  panel.StopMovingOrSizing)
     panel:Hide()
 
-    -- ── Tabs ────────────────────────────────────────────
     local TABS        = { "Game", "Theme", "Colors", "History" }
     local tabButtons  = {}
     local tabContents = {}
@@ -258,16 +225,12 @@ function CrossGambling:BuildOptionsMenu()
         tabContents[i] = pane
     end
 
-    -- ════════════════════════════════════════════════════
-    --  Tab 1 – Game
-    -- ════════════════════════════════════════════════════
     do
         local g    = tabContents[1]
         local FULL = ROW_W
         local HALF = math.floor((FULL - 6) / 2)
         local yOff = -8
 
-        -- Statistics
         MakeSectionHeader(g, "STATISTICS"):SetPoint("TOPLEFT", g, PAD + 2, yOff)
         yOff = yOff - 18
 
@@ -294,7 +257,6 @@ function CrossGambling:BuildOptionsMenu()
         MakeSectionHeader(g, "GAME SETTINGS"):SetPoint("TOPLEFT", g, PAD + 2, yOff)
         yOff = yOff - 18
 
-        -- Guild Cut toggle
         local guildRow = MakeRow(g, FULL, yOff, isClassic)
         MakeLabel(guildRow, "Guild Cut", "GameFontNormalSmall"):SetPoint("LEFT", guildRow, "LEFT", 10, 0)
         local guildToggle = MakeToggle(guildRow, 64, 20, isClassic)
@@ -307,7 +269,6 @@ function CrossGambling:BuildOptionsMenu()
         end)
         yOff = yOff - ROW_H - 4
 
-        -- House Cut %
         local houseRow = MakeRow(g, FULL, yOff, isClassic)
         MakeLabel(houseRow, "House Cut %", "GameFontNormalSmall"):SetPoint("LEFT", houseRow, "LEFT", 10, 0)
         local houseBox = CreateFrame("EditBox", nil, houseRow, "InputBoxTemplate")
@@ -324,7 +285,6 @@ function CrossGambling:BuildOptionsMenu()
         end)
         yOff = yOff - ROW_H - 4
 
-        -- Realm Filter toggle
         local realmRow = MakeRow(g, FULL, yOff, isClassic)
         MakeLabel(realmRow, "Realm Filter", "GameFontNormalSmall"):SetPoint("LEFT", realmRow, "LEFT", 10, 0)
         local realmToggle = MakeToggle(realmRow, 64, 20, isClassic)
@@ -335,7 +295,6 @@ function CrossGambling:BuildOptionsMenu()
         end)
         yOff = yOff - ROW_H - 4
 
-        -- Join Word
         local joinRow = MakeRow(g, FULL, yOff, isClassic)
         local joinLbl = MakeLabel(joinRow, "Join Word", "GameFontNormalSmall")
         joinLbl:SetPoint("LEFT", joinRow, "LEFT", 10, 0)
@@ -359,7 +318,6 @@ function CrossGambling:BuildOptionsMenu()
         joinBox:SetScript("OnEditFocusLost", SaveJoin)
         yOff = yOff - ROW_H - 4
 
-        -- Leave Word
         local leaveRow = MakeRow(g, FULL, yOff, isClassic)
         local leaveLbl = MakeLabel(leaveRow, "Leave Word", "GameFontNormalSmall")
         leaveLbl:SetPoint("LEFT", leaveRow, "LEFT", 10, 0)
@@ -407,9 +365,6 @@ function CrossGambling:BuildOptionsMenu()
         end)
     end
 
-    -- ════════════════════════════════════════════════════
-    --  Tab 2 – Theme
-    -- ════════════════════════════════════════════════════
     do
         local g    = tabContents[2]
         local FULL = ROW_W
@@ -481,9 +436,6 @@ function CrossGambling:BuildOptionsMenu()
         infoTxt:SetWidth(FULL)
     end
 
-    -- ════════════════════════════════════════════════════
-    --  Tab 3 – Colors
-    -- ════════════════════════════════════════════════════
     do
         local g    = tabContents[3]
         local FULL = ROW_W
@@ -507,7 +459,6 @@ function CrossGambling:BuildOptionsMenu()
             hint:SetTextColor(0.45, 0.45, 0.45)
             yOff = yOff - 20
 
-            -- Four colour rows – each swatch calls ColorsOpenPicker and refreshes itself
             local colorDefs = {
                 { label = "Frame Color",  key = "frameColor"  },
                 { label = "Button Color", key = "buttonColor" },
@@ -517,7 +468,6 @@ function CrossGambling:BuildOptionsMenu()
             local allSwatches = {}
             for _, def in ipairs(colorDefs) do
                 local _, sw = MakeColorRow(g, FULL, yOff, def.label, def.key, isClassic)
-                -- Wire up the swatch click to the Colors module
                 sw:SetScript("OnClick", function()
                     CrossGambling:ColorsOpenPicker(def.key, function()
                         if sw.Refresh then sw:Refresh() end
@@ -530,7 +480,6 @@ function CrossGambling:BuildOptionsMenu()
             MakeSep(g, FULL):SetPoint("TOPLEFT", g, PAD, yOff)
             yOff = yOff - 14
 
-            -- Font size slider
             local fsLabel = MakeLabel(g, "Chat Font Size:", "GameFontNormalSmall")
             fsLabel:SetPoint("TOPLEFT", g, PAD, yOff)
             fsLabel:SetTextColor(0.85, 0.85, 0.85)
@@ -565,7 +514,6 @@ function CrossGambling:BuildOptionsMenu()
             MakeSep(g, FULL):SetPoint("TOPLEFT", g, PAD, yOff)
             yOff = yOff - 14
 
-            -- Reset colours button
             local resetColBtn = MakeButton(g, FULL, 26, "Reset to Default Colors", isClassic)
             resetColBtn:SetPoint("TOPLEFT", g, PAD, yOff)
             if resetColBtn.SetBackdropColor then
@@ -582,9 +530,6 @@ function CrossGambling:BuildOptionsMenu()
         end
     end
 
-    -- ════════════════════════════════════════════════════
-    --  Tab 4 – History
-    -- ════════════════════════════════════════════════════
     do
         local g    = tabContents[4]
         local FULL = ROW_W
@@ -736,7 +681,6 @@ function CrossGambling:BuildOptionsMenu()
         end)
     end
 
-    -- ── Activate first tab ──────────────────────────────
     ShowTab(1)
     CrossGambling.OptionsMenuFrame = panel
 

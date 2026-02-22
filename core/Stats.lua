@@ -33,15 +33,7 @@ function CrossGambling:joinStats(info, args)
         timestamp = time()
     }
 
-	self.db.global.auditLog = self.db.global.auditLog or {}
-    table.insert(self.db.global.auditLog, {
-        action = "joinStats",
-        mainname = mainname,
-        altname = altname,
-        statsAdded = altStats.stats,
-        deathrollStatsAdded = altStats.deathrollStats,
-        timestamp = time()
-    })
+    CrossGambling.History:LogJoinStats(mainname, altname, altStats.stats, altStats.deathrollStats)
 
     DEFAULT_CHAT_FRAME:AddMessage(string.format("Joined alt '%s' to main '%s'", altname, mainname))
 end
@@ -85,45 +77,11 @@ function CrossGambling:unjoinStats(info, altname)
         timestamp = time()
     }
 
-	self.db.global.auditLog = self.db.global.auditLog or {}
-    table.insert(self.db.global.auditLog, {
-        action = "unjoinStats",
-        mainname = mainname,
-        altname = altname,
-        pointsRemoved = altStats.stats,
-        deathrollStatsRemoved = altStats.deathrollStats,
-        timestamp = time()
-    })
+    CrossGambling.History:LogUnjoinStats(mainname, altname, altStats.stats, altStats.deathrollStats)
 
     DEFAULT_CHAT_FRAME:AddMessage(string.format("Unjoined alt '%s' from main '%s'", altname, mainname))
 end
 
-function CrossGambling:auditMerges()
-    if not self.db.global.auditLog or #self.db.global.auditLog == 0 then
-        self:Print("No audit log entries found.")
-        return
-    end
-
-    self:Print("-- Audit Log --")
-    for i, entry in ipairs(self.db.global.auditLog) do
-        if entry.action == "updateStat" then
-            self:Print(string.format(
-                "%d. [%s] Updated stats for %s: old=%d, added=%d, new=%d",
-                i, entry.timestamp, entry.player, entry.oldAmount, entry.addedAmount, entry.newAmount
-            ))
-        elseif entry.action == "joinStats" then
-            self:Print(string.format(
-                "%d. [%s] Joined alt '%s' to main '%s' with %d stats and %d deathroll stats",
-                i, entry.timestamp, entry.altname, entry.mainname, entry.statsAdded or 0, entry.deathrollStatsAdded or 0
-            ))
-        elseif entry.action == "unjoinStats" then
-            self:Print(string.format(
-                "%d. [%s] Unjoined alt '%s' from main '%s', points subtracted: %d, deathroll: %d",
-                i, entry.timestamp, entry.altname, entry.mainname, entry.pointsRemoved or 0, entry.deathrollStatsRemoved or 0
-            ))
-        end
-    end
-end
 
 function CrossGambling:reportStats(full)
     self:Announce("-- CrossGambling All Time Stats --")
@@ -273,15 +231,7 @@ function CrossGambling:updateStat(info, args)
         self:updatePlayerStat(player, amount)
         local newAmount = self.db.global.stats[player] or 0
 
-		self.db.global.auditLog = self.db.global.auditLog or {}
-        table.insert(self.db.global.auditLog, {
-            action = "updateStat",
-            player = player,
-            oldAmount = oldAmount,
-            addedAmount = amount,
-            newAmount = newAmount,
-            timestamp = time()
-        })
+        CrossGambling.History:LogUpdateStat(player, oldAmount, amount, newAmount)
 
         self:Print(string.format("Successfully updated stats for %s (%d -> %d), added %d", player, oldAmount, newAmount, amount))
     else
