@@ -14,7 +14,7 @@ local ButtonColors = function(self)
     end
     self:SetBackdrop(Backdrop)
     self:SetBackdropBorderColor(0, 0, 0)
-    CrossGambling:ColorsRegisterButton(self)
+    if CrossGambling.ColorsRegisterButton then CrossGambling:ColorsRegisterButton(self) end
 end
 
 local SideColor = function(self)
@@ -23,7 +23,7 @@ local SideColor = function(self)
     end
     self:SetBackdrop(Backdrop)
     self:SetBackdropBorderColor(0, 0, 0)
-    CrossGambling:ColorsRegisterSide(self)
+    if CrossGambling.ColorsRegisterSide then CrossGambling:ColorsRegisterSide(self) end
 end
 local CrossGamblingUI
 
@@ -31,7 +31,7 @@ function CrossGambling:toggleUi()
     if CrossGamblingUI:IsVisible() then
         CrossGamblingUI:Hide()
     else
-        CrossGambling:ColorsLoad()
+        if CrossGambling.ColorsLoad then CrossGambling:ColorsLoad() end
         CrossGamblingUI:Show()
     end
 end
@@ -39,7 +39,7 @@ end
 function CrossGambling:ShowSlick(info)
     if not CrossGamblingUI:IsVisible() then
         CrossGamblingUI:Show()
-        CrossGambling:ColorsLoad()
+        if CrossGambling.ColorsLoad then CrossGambling:ColorsLoad() end
     else
         CrossGamblingUI:Hide()
     end
@@ -71,7 +71,7 @@ self.db.global.scale = self.db.global.scale
 CrossGamblingUI:SetScale(self.db.global.scale)
 CrossGamblingUI:Hide()
 
-CrossGambling:ColorsSetMainFrame(CrossGamblingUI)
+if CrossGambling.ColorsSetMainFrame then CrossGambling:ColorsSetMainFrame(CrossGamblingUI) end
 
 local MainHeader = CreateFrame("Frame", nil, CrossGamblingUI, "BackdropTemplate")
 MainHeader:SetSize(CrossGamblingUI:GetSize(), 21)
@@ -926,7 +926,7 @@ end)
 
 CGRightMenu.TextField = CreateFrame("ScrollingMessageFrame", nil, CGRightMenu)
 CrossGambling.ChatTextField = CGRightMenu.TextField
-CrossGambling:ColorsSetTextField(CGRightMenu.TextField)
+if CrossGambling.ColorsSetTextField then CrossGambling:ColorsSetTextField(CGRightMenu.TextField) end
 CGRightMenu.TextField:SetPoint("TOPLEFT", CGRightMenu, 4, -4)
 CGRightMenu.TextField:SetSize(CGRightMenu:GetWidth()-8, 120)
 CGRightMenu.TextField:SetFont("Fonts\\FRIZQT__.TTF", self.db.global.fontvalue, "")
