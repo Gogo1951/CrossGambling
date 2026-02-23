@@ -1,7 +1,7 @@
 ## Interface: 50503
 ## Title:Cross|cffff7d0aGambling
 ## Author: Jay
-## Version: v12.0.08
+## Version: @project-version@
 ## X-Website: https://www.curseforge.com/wow/addons/crossgambling
 ## X-Category: Minigames, Auction/Economy, Chat/Communication, Guild
 ## X-Localizations: enUS, frFR, ruRU
@@ -42,6 +42,7 @@ core/Game.lua
 core/history/History.lua
 core/Stats.lua
 core/Events.lua
+
 
 
 
