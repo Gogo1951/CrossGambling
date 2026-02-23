@@ -183,7 +183,7 @@ function CrossGambling:InitDB()
 			}
 
     CGCall = {}
-	self.db = LibStub("AceDB-3.0"):New("CrossGamblingDB", defaults, true)
+	self.db = LibStub("AceDB-3.0"):New("CrossGambling", defaults, true)
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("CrossGambling", options, {"CrossGambling", "cg"})
 	if(CrossGambling["stats"]) then CrossGambling["stats"] = self.db.global.stats end
 
@@ -441,18 +441,11 @@ function CrossGambling:CloseGame()
                 self:updatePlayerStat(self.game.result.losers[i].name, self.game.result.amountOwed * -1)
                 self:updatePlayerStat(self.game.result.winners[i].name, self.game.result.amountOwed * #self.game.result.losers)
 
-
-                local loserName = self.game.result.losers[i].name
-                local winnerName = self.game.result.winners[i].name
-                local amountOwed = self.game.result.amountOwed
-
-                table.insert(self.db.global.auditLog, {
-                    timestamp = time(),
-                    action = "debt",
-                    loser = loserName,
-                    winner = winnerName,
-                    amount = amountOwed,
-                })
+                CrossGambling.History:LogDebt(
+                    self.game.result.losers[i].name,
+                    self.game.result.winners[i].name,
+                    self.game.result.amountOwed
+                )
             end
 
         else
