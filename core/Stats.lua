@@ -32,8 +32,16 @@ function CrossGambling:joinStats(info, args)
         deathrollStatsAdded = altStats.deathrollStats,
         timestamp = time()
     }
-
-    CrossGambling.History:LogJoinStats(mainname, altname, altStats.stats, altStats.deathrollStats)
+	
+	self.db.global.auditLog = self.db.global.auditLog or {}
+    table.insert(self.db.global.auditLog, {
+        action = "joinStats",
+        mainname = mainname,
+        altname = altname,
+        statsAdded = altStats.stats,
+        deathrollStatsAdded = altStats.deathrollStats,
+        timestamp = time()
+    })
 
     DEFAULT_CHAT_FRAME:AddMessage(string.format("Joined alt '%s' to main '%s'", altname, mainname))
 end
@@ -77,15 +85,49 @@ function CrossGambling:unjoinStats(info, altname)
         timestamp = time()
     }
 
-    CrossGambling.History:LogUnjoinStats(mainname, altname, altStats.stats, altStats.deathrollStats)
+	self.db.global.auditLog = self.db.global.auditLog or {}
+    table.insert(self.db.global.auditLog, {
+        action = "unjoinStats",
+        mainname = mainname,
+        altname = altname,
+        pointsRemoved = altStats.stats,
+        deathrollStatsRemoved = altStats.deathrollStats,
+        timestamp = time()
+    })
 
     DEFAULT_CHAT_FRAME:AddMessage(string.format("Unjoined alt '%s' from main '%s'", altname, mainname))
 end
 
+function CrossGambling:auditMerges()
+    if not self.db.global.auditLog or #self.db.global.auditLog == 0 then
+        self:Print("No audit log entries found.")
+        return
+    end
+
+    self:Print("-- Audit Log --")
+    for i, entry in ipairs(self.db.global.auditLog) do
+        if entry.action == "updateStat" then
+            self:Print(string.format(
+                "%d. [%s] Updated stats for %s: old=%d, added=%d, new=%d",
+                i, entry.timestamp, entry.player, entry.oldAmount, entry.addedAmount, entry.newAmount
+            ))
+        elseif entry.action == "joinStats" then
+            self:Print(string.format(
+                "%d. [%s] Joined alt '%s' to main '%s' with %d stats and %d deathroll stats",
+                i, entry.timestamp, entry.altname, entry.mainname, entry.statsAdded or 0, entry.deathrollStatsAdded or 0
+            ))
+        elseif entry.action == "unjoinStats" then
+            self:Print(string.format(
+                "%d. [%s] Unjoined alt '%s' from main '%s', points subtracted: %d, deathroll: %d",
+                i, entry.timestamp, entry.altname, entry.mainname, entry.pointsRemoved or 0, entry.deathrollStatsRemoved or 0
+            ))
+        end
+    end
+end
 
 function CrossGambling:reportStats(full)
-    self:Announce("-- CrossGambling All Time Stats --")
-    self:Announce(string.format("The house has taken %s total.", (self.db.global.housestats or 0)))
+    SendChatMessage("-- CrossGambling All Time Stats --", self.game.chatMethod)
+    SendChatMessage(string.format("The house has taken %s total.", (self.db.global.housestats or 0)), self.game.chatMethod)
 
     local combinedStats, houseStats = {}, {}
 
@@ -123,7 +165,7 @@ function CrossGambling:reportStats(full)
     end
 
     if next(combinedStats) == nil then
-        self:Announce("No stats to report.")
+        SendChatMessage("No stats to report.", self.game.chatMethod)
         return
     end
 
@@ -146,23 +188,23 @@ function CrossGambling:reportStats(full)
             if houseDebt > 0 then
                 statMessage = statMessage .. string.format(" and owes the house %d.", houseDebt)
             end
-            self:Announce(statMessage)
+            SendChatMessage(statMessage, self.game.chatMethod)
         end
         return
     end
 
-    self:Announce("-- Top 3 Winners --")
+    SendChatMessage("-- Top 3 Winners --", self.game.chatMethod)
 		for i = 1, math.min(3, #winners) do
-			self:Announce(string.format("%d. %s won %d total", i, winners[i].name, math.abs(winners[i].amount)))
+			SendChatMessage(string.format("%d. %s won %d total", i, winners[i].name, math.abs(winners[i].amount)), self.game.chatMethod)
 		end
 
 		table.sort(losers, function(a, b)
 			return a.amount < b.amount
 		end)
 
-		self:Announce("-- Top 3 Losers --")
+		SendChatMessage("-- Top 3 Losers --", self.game.chatMethod)
 		for i = 1, math.min(3, #losers) do
-			self:Announce(string.format("%d. %s lost %d total", i, losers[i].name, math.abs(losers[i].amount)))
+			SendChatMessage(string.format("%d. %s lost %d total", i, losers[i].name, math.abs(losers[i].amount)), self.game.chatMethod)
 		end
 
 end
@@ -172,11 +214,11 @@ function CrossGambling:getMainName(playerName)
 end
 
 function CrossGambling:reportSessionStats()
-    self:Announce("-- Current Session Stats --")
+    SendChatMessage("-- Current Session Stats --", self.game.chatMethod)
 
     local sessionSortlist = self:sortStats(self.game.sessionStats or {})
     if #sessionSortlist == 0 then
-        self:Announce("No stats available for the current session.")
+        SendChatMessage("No stats available for the current session.", self.game.chatMethod)
     else
         self:reportSortedStats(sessionSortlist, "Current Session")
     end
@@ -185,7 +227,7 @@ end
 function CrossGambling:reportSortedStats(sortlist, title)
     for k, v in ipairs(sortlist) do
         local sortsign = v.amount < 0 and "lost" or "won"
-        self:Announce(string.format("%d. %s %s %d total", k, v.name, sortsign, math.abs(v.amount)))
+        SendChatMessage(string.format("%d. %s %s %d total", k, v.name, sortsign, math.abs(v.amount)), self.game.chatMethod)
     end
 end
 
@@ -207,10 +249,10 @@ function CrossGambling:updatePlayerStat(playerName, amount, isDeathroll)
 end
 
 function CrossGambling:reportDeathrollStats()
-    self:Announce("-- Deathroll Stats --")
+    SendChatMessage("-- Deathroll Stats --", self.game.chatMethod)
     local deathrollSortlist = self:sortStats(self.db.global.deathrollStats or {})
     if #deathrollSortlist == 0 then
-        self:Announce("No stats available for Deathrolls.")
+        SendChatMessage("No stats available for Deathrolls.", self.game.chatMethod)
     else
         self:reportSortedStats(deathrollSortlist, "Deathrolls")
     end
@@ -230,8 +272,16 @@ function CrossGambling:updateStat(info, args)
         local oldAmount = self.db.global.stats[player] or 0
         self:updatePlayerStat(player, amount)
         local newAmount = self.db.global.stats[player] or 0
-
-        CrossGambling.History:LogUpdateStat(player, oldAmount, amount, newAmount)
+		
+		self.db.global.auditLog = self.db.global.auditLog or {}
+        table.insert(self.db.global.auditLog, {
+            action = "updateStat",
+            player = player,
+            oldAmount = oldAmount,
+            addedAmount = amount,
+            newAmount = newAmount,
+            timestamp = time()
+        })
 
         self:Print(string.format("Successfully updated stats for %s (%d -> %d), added %d", player, oldAmount, newAmount, amount))
     else
@@ -239,112 +289,6 @@ function CrossGambling:updateStat(info, args)
     end
 end
 
-
-function CrossGambling:exportStats()
-    local export = {
-        stats         = self.db.global.stats or {},
-        deathrollStats = self.db.global.deathrollStats or {},
-        joinstats     = self.db.global.joinstats or {},
-        altStats      = self.db.global.altStats or {},
-    }
-
-    local parts = {}
-    local function encode(tbl, key)
-        local entries = {}
-        for k, v in pairs(tbl) do
-            if type(v) == "number" then
-                table.insert(entries, k .. "=" .. tostring(v))
-            elseif type(v) == "string" then
-                table.insert(entries, k .. "=" .. v)
-            end
-        end
-        table.sort(entries)
-        table.insert(parts, key .. "{" .. table.concat(entries, ",") .. "}")
-    end
-
-    encode(export.stats, "S")
-    encode(export.deathrollStats, "D")
-    encode(export.joinstats, "J")
-
-    local altParts = {}
-    for altname, data in pairs(export.altStats) do
-        local s = tostring(data.stats or 0)
-        local d = tostring(data.deathrollStats or 0)
-        table.insert(altParts, altname .. "=" .. s .. "|" .. d)
-    end
-    table.sort(altParts)
-    table.insert(parts, "A{" .. table.concat(altParts, ",") .. "}")
-
-    return "CG:" .. table.concat(parts, ";")
-end
-
-function CrossGambling:importStats(str)
-    if not str or str:sub(1, 3) ~= "CG:" then
-        self:Print("Invalid import string.")
-        return
-    end
-
-    str = str:sub(4)
-
-    local function decodeBlock(block)
-        local result = {}
-        if block == "" then return result end
-        for pair in block:gmatch("[^,]+") do
-            local k, v = pair:match("^(.-)=(.+)$")
-            if k and v then
-                result[k] = v
-            end
-        end
-        return result
-    end
-
-    local parsed = {}
-    for segment in str:gmatch("[^;]+") do
-        local key, block = segment:match("^(%a+){(.*)}$")
-        if key then
-            parsed[key] = block
-        end
-    end
-
-    if parsed["S"] then
-        local data = decodeBlock(parsed["S"])
-        for k, v in pairs(data) do
-            self.db.global.stats[k] = tonumber(v) or 0
-        end
-    end
-
-    if parsed["D"] then
-        local data = decodeBlock(parsed["D"])
-        for k, v in pairs(data) do
-            self.db.global.deathrollStats[k] = tonumber(v) or 0
-        end
-    end
-
-    if parsed["J"] then
-        local data = decodeBlock(parsed["J"])
-        for k, v in pairs(data) do
-            self.db.global.joinstats[k] = v
-        end
-    end
-
-    if parsed["A"] then
-        self.db.global.altStats = self.db.global.altStats or {}
-        local block = parsed["A"]
-        if block ~= "" then
-            for pair in block:gmatch("[^,]+") do
-                local altname, sv, dv = pair:match("^(.-)=(%d+)|(%d+)$")
-                if altname then
-                    self.db.global.altStats[altname] = {
-                        stats          = tonumber(sv) or 0,
-                        deathrollStats = tonumber(dv) or 0,
-                    }
-                end
-            end
-        end
-    end
-
-    self:Print("Stats imported successfully.")
-end
 
 function CrossGambling:deleteStat(info, player)
     self.db.global.stats[player] = nil

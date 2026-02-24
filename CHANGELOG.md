@@ -1,6 +1,7 @@
 # CrossGambling
 
-## [v12.0.08](https://github.com/LoyalFTW/CrossGambling/tree/v12.0.08) (2026-01-25)
-[Full Changelog](https://github.com/LoyalFTW/CrossGambling/compare/v12.0.06...v12.0.08) [Previous Releases](https://github.com/LoyalFTW/CrossGambling/releases)
+## [v12.0.09](https://github.com/LoyalFTW/CrossGambling/tree/v12.0.09) (2026-02-19)
+[Full Changelog](https://github.com/LoyalFTW/CrossGambling/compare/v12.0.08...v12.0.09) [Previous Releases](https://github.com/LoyalFTW/CrossGambling/releases)
 
-- Update CrossGambling\_Mainline.toc  
+- Updated  
+    * Removed a second add\_commas  

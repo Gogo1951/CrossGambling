@@ -50,7 +50,7 @@ local options = {
             desc = "Show/Hide Minimap Icon",
             type = "execute",
             func = "ToggleMinimap"
-		},
+		}, 
         allstats = {
             name = "All Stats",
             desc = "Shows all Stats(Out of Order in Guild)",
@@ -117,11 +117,11 @@ local options = {
             type = "execute",
             func = "listBans"
         },
-		audit = {
+		audit = { 
 			name = "List Merges",
 			desc = "See all merged players or changes",
 			type = "execute",
-			func = "auditMerges"
+			func = "auditMerges" 
 		},
     }
 }
@@ -131,14 +131,12 @@ function CrossGambling:OnInitialize()
 	self:InitDB()
 	self:InitMinimap()
 	self:DrawSecondEvents()
-
+		
 	if (self.db.global.theme == uiThemes[2]) then
 		self:DrawMainEvents()
 	elseif (self.db.global.theme == uiThemes[1]) then
 		self:DrawMainEvents2()
 	end
-
-	self:BuildOptionsMenu()
 end
 
 function CrossGambling:InitDB()
@@ -149,8 +147,6 @@ function CrossGambling:InitDB()
             },
             wager = 1000,
             houseCut = 10,
-            joinWord = "1",
-            leaveWord = "-1",
 			colors = { frameColor = {r = 0.27, g = 0.27, b = 0.27}, buttonColor = {r = 0.30, g = 0.30, b = 0.30}, sideColor = {r = 0.20, g = 0.20, b = 0.20}, fontColor = {r = 1, g = 0, b = 0} },
             themechoice = 1,
             theme = uiThemes[2],
@@ -160,7 +156,7 @@ function CrossGambling:InitDB()
             joinstats = {},
             scale = 1,
             scalevalue = 1,
-			fontvalue = 14,
+			fontvalue = 14, 
             bans = {},
 			auditLog = {},
 			auditRetention = -1,
@@ -174,7 +170,7 @@ function CrossGambling:InitDB()
 				chatframeOption = true,
 				realmFilter = false,
 				house = false,
-				host = false,
+				host = false, 
 				players = {},
 				PlayerName = UnitName("player"),
 				PlayerClass = select(2, UnitClass("player")),
@@ -186,7 +182,7 @@ function CrossGambling:InitDB()
 	self.db = LibStub("AceDB-3.0"):New("CrossGambling", defaults, true)
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("CrossGambling", options, {"CrossGambling", "cg"})
 	if(CrossGambling["stats"]) then CrossGambling["stats"] = self.db.global.stats end
-
+	
 end
 
 function CrossGambling:InitMinimap()
@@ -203,9 +199,9 @@ function CrossGambling:InitMinimap()
 	end
 end,
 	OnTooltipShow = function(tooltip)
-            local version = "v12.0.08"
-            if version:find("project-version", 1, true) then
-                version = "Dev"
+            local version = "v12.0.09"
+            if version:find("project-version", 1, true) then 
+                version = "Dev" 
             end
             tooltip:AddDoubleLine("Cross Gambling", "|cFFAAAAAA" .. version .. "|r", 1, 0.82, 0, 1, 1, 1)
             tooltip:AddLine(" ")
@@ -226,6 +222,8 @@ end
 end
 
 
+
+
 function CrossGambling:ToggleGUI(info, isShowing)
 	local method = isShowing and "Show" or "Hide"
 	local theme = self.db.global.theme
@@ -235,6 +233,27 @@ function CrossGambling:ToggleGUI(info, isShowing)
 	elseif theme == uiThemes[2] then
 		CrossGambling[method .. "Slick"](info)
 	end
+end
+
+function CrossGambling:SendMsg(event, arg1)
+  local msg = event
+  if arg1 then msg = msg .. ":" .. tostring(arg1) end
+  if self.game.chatMethod then
+    ChatThrottleLib:SendAddonMessage("BULK", "CrossGambling", msg, self.game.chatMethod)
+  end
+end
+
+function CrossGambling:RegisterChatEvents()
+    if self.game.chatMethod == chatMethods[1] then
+        self:RegisterEvent("CHAT_MSG_PARTY", "handleChatMsg")
+        self:RegisterEvent("CHAT_MSG_PARTY_LEADER", "handleChatMsg")
+    elseif self.game.chatMethod == chatMethods[2] then
+        self:RegisterEvent("CHAT_MSG_RAID", "handleChatMsg")
+        self:RegisterEvent("CHAT_MSG_RAID_LEADER", "handleChatMsg")
+        self:RegisterEvent("CHAT_MSG_INSTANCE_CHAT", "handleChatMsg") 
+    else
+        self:RegisterEvent("CHAT_MSG_GUILD", "handleChatMsg")
+    end
 end
 
 function CrossGambling:chatMethod()
@@ -254,13 +273,78 @@ function CrossGambling:chatMethod()
     else
         self.game.chatMethod = chatMethods[1]
     end
-
+	
 end
 
-function add_commas(value)
-return #tostring(value) > 3 and tostring(value):gsub("^(-?%d+)(%d%d%d)", "%1,%2"):gsub("(%d)(%d%d%d)", ",%1,%2") or tostring(value)
+function add_commas(value) 
+return #tostring(value) > 3 and tostring(value):gsub("^(-?%d+)(%d%d%d)", "%1,%2"):gsub("(%d)(%d%d%d)", ",%1,%2") or tostring(value) 
 end
 
+
+function CrossGambling:handleChatMsg(_, text, playerName)
+    if (self.game.state == gameStates[2]) then
+        local playerName = strsplit("-", playerName, 2)
+        self:RegisterGame(text, playerName)
+    end
+end
+
+function CrossGambling:handleSystemMessage(_, text)
+    local playerName, actualRoll, minRoll, maxRoll = strmatch(text, "^([^ ]+) .+ (%d+) %((%d+)-(%d+)%)%.?$")
+
+    if not playerName or not actualRoll or not minRoll or not maxRoll then
+        return
+    end
+
+    minRoll, maxRoll = tonumber(minRoll), tonumber(maxRoll)
+    actualRoll = tonumber(actualRoll)
+
+    if self.game.mode == "1v1DeathRoll" then
+        if minRoll ~= 1 or maxRoll ~= self.currentRoll then
+            SendChatMessage("Error: Roll does not match expected range.", self.game.chatMethod)
+            return
+        end
+
+        local currentPlayer = self.game.players[self.currentPlayerIndex]
+        if not currentPlayer then
+            SendChatMessage("Error: Current player is nil.", self.game.chatMethod)
+            return
+        end
+
+        if playerName ~= currentPlayer.name then
+            SendChatMessage(format("%s, it's not your turn! It's %s's turn.", playerName, currentPlayer.name), self.game.chatMethod)
+            return
+        end
+
+        CGCall["PLAYER_ROLL"](playerName, actualRoll)
+
+        if actualRoll == 1 then
+            local loser = currentPlayer
+            local winner = self.game.players[3 - self.currentPlayerIndex]  
+            SendChatMessage(format("%s rolls a 1 and loses! %s owes %s %s", loser.name, loser.name, winner.name, self.db.global.wager), self.game.chatMethod)
+
+            self:updatePlayerStat(loser.name, -self.db.global.wager, true) 
+            self:updatePlayerStat(winner.name, self.db.global.wager, true) 
+            return
+        else
+            self.currentRoll = actualRoll
+            self.currentPlayerIndex = 3 - self.currentPlayerIndex
+            self:PromptNextRoll()
+        end
+    else
+        if minRoll == 1 and maxRoll == self.db.global.wager then
+            for i = 1, #self.game.players do
+                if self.game.players[i].name == playerName and self.game.players[i].roll == nil then
+                    self.game.players[i].roll = actualRoll
+                    self:SendMsg("PLAYER_ROLL", playerName .. ":" .. tostring(actualRoll))
+                end
+            end
+        end
+
+        if #self:CheckRolls() == 0 then
+            self:CGResults()
+        end
+    end
+end
 
 function CrossGambling:banPlayer(info, playerName)
     if not playerName or playerName == "" then
@@ -338,9 +422,9 @@ end
 function CrossGambling:PromptNextRoll()
     local currentPlayer = self.game.players[self.currentPlayerIndex]
     if currentPlayer then
-        self:Announce(format("%s, it's your turn! Type /roll %d", currentPlayer.name, self.currentRoll))
+        SendChatMessage(format("%s, it's your turn! Type /roll %d", currentPlayer.name, self.currentRoll), self.game.chatMethod)
       else
-        self:Announce("Error: Current player is nil during prompt.")
+        SendChatMessage("Error: Current player is nil during prompt.", self.game.chatMethod)
     end
 end
 
@@ -371,13 +455,13 @@ function CrossGambling:CGRolls()
             self.game.state = gameStates[3]
             self:SendMsg("START_ROLLS")
         else
-			self:Announce("Not enough Players!")
+			SendChatMessage("Not enough Players!", self.game.chatMethod)
         end
     elseif (self.game.state == gameStates[3]) then
         local playersRoll = self:CheckRolls()
         if #playersRoll > 0 then
             local message = table.concat(playersRoll, ", ") .. " still needs to roll!"
-			self:Announce(message)
+			SendChatMessage(message, self.game.chatMethod)
         end
     end
 end
@@ -398,7 +482,7 @@ function CrossGambling:CGResults()
 
     if  (self.game.result == nil) then
         self.game.result = result
-    else
+    else 
         if (#self.game.result.winners > 1) then
             if (#result.winners > 0) then
                 self.game.result.winners = result.winners
@@ -433,23 +517,39 @@ function CrossGambling:CloseGame()
                     RollNotification = self.game.result.losers[i].name .. " owes " .. self.game.result.winners[i].name .. " " .. add_commas(self.game.result.amountOwed) .. " gold!"
                 elseif (self.game.house == true) then
                     RollNotification = self.game.result.losers[i].name .. " owes " .. self.game.result.winners[i].name .. " " .. add_commas(self.game.result.amountOwed) .. " gold!" .. " plus " .. add_commas(houseAmount) .. " to the guild"
-                    self:updatePlayerStat("guild", houseAmount)
+                    self:updatePlayerStat("guild", houseAmount) 
                 end
 
-                self:Announce(RollNotification)
+                if (self.game.chatframeOption == false and self.game.host == true) then
+                    self:SendMsg(format("CHAT_MSG:%s:%s:%s", self.game.PlayerName, self.game.PlayerClass, RollNotification))
+                else
+                    SendChatMessage(RollNotification, self.game.chatMethod)
+                end
 
                 self:updatePlayerStat(self.game.result.losers[i].name, self.game.result.amountOwed * -1)
                 self:updatePlayerStat(self.game.result.winners[i].name, self.game.result.amountOwed * #self.game.result.losers)
 
-                CrossGambling.History:LogDebt(
-                    self.game.result.losers[i].name,
-                    self.game.result.winners[i].name,
-                    self.game.result.amountOwed
-                )
+
+                local loserName = self.game.result.losers[i].name
+                local winnerName = self.game.result.winners[i].name
+                local amountOwed = self.game.result.amountOwed
+
+                table.insert(self.db.global.auditLog, {
+                    timestamp = time(),
+                    action = "debt",
+                    loser = loserName,
+                    winner = winnerName,
+                    amount = amountOwed,
+                })
             end
 
         else
-            self:Announce("No winners this round!")
+            if (self.game.chatframeOption == false and self.game.host == true) then
+                local RollNotification = "No winners this round!"
+                self:SendMsg(format("CHAT_MSG:%s:%s:%s", self.game.PlayerName, self.game.PlayerClass, RollNotification))
+            else
+                SendChatMessage("No winners this round!", self.game.chatMethod)
+            end
         end
     end
 
@@ -470,7 +570,12 @@ function CrossGambling:registerPlayer(playerName, playerRoll)
 
     for i = 1, #self.db.global.bans do
         if (self.db.global.bans[i] == playerName) then
-		    self:Announce("Sorry " .. playerName .. ", you're banned.")
+		    if(self.game.chatframeOption == false and self.game.host == true) then
+				local RollNotification = "Sorry " .. playerName .. ", you're banned."
+				self:SendMsg(format("CHAT_MSG:%s:%s:%s", self.game.PlayerName, self.game.PlayerClass, RollNotification))
+			else
+				SendChatMessage("Sorry " .. playerName .. ", you're banned." , self.game.chatMethod)
+			end
             return
         end
     end
@@ -479,13 +584,13 @@ function CrossGambling:registerPlayer(playerName, playerRoll)
         name = playerName,
         roll = playerRoll
     }
-
+	
     tinsert(self.game.players, newRegister)
 end
 
 function CrossGambling:unregisterPlayer(playerName)
     for i = 1, #self.game.players do
-        if (self.game.players[i].name == playerName) then
+        if (self.game.players[i].name == playerName) then         
 		   tremove(self.game.players, i)
             return
         end
@@ -493,3 +598,12 @@ function CrossGambling:unregisterPlayer(playerName)
 end
 
 
+
+function CrossGambling:UnRegisterChatEvents()
+        self:UnregisterEvent("CHAT_MSG_PARTY")
+        self:UnregisterEvent("CHAT_MSG_PARTY_LEADER")
+        self:UnregisterEvent("CHAT_MSG_RAID")
+        self:UnregisterEvent("CHAT_MSG_RAID_LEADER")
+		self:UnregisterEvent("CHAT_MSG_INSTANCE_CHAT")
+        self:UnregisterEvent("CHAT_MSG_GUILD")
+end
