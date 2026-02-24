@@ -179,7 +179,7 @@ function CrossGambling:InitDB()
 			}
 
     CGCall = {}
-	self.db = LibStub("AceDB-3.0"):New("CrossGambling", defaults, true)
+	self.db = LibStub("AceDB-3.0"):New("CrossGamblingDB", defaults, true)
 	LibStub("AceConfig-3.0"):RegisterOptionsTable("CrossGambling", options, {"CrossGambling", "cg"})
 	if(CrossGambling["stats"]) then CrossGambling["stats"] = self.db.global.stats end
 	
